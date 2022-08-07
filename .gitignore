@@ -1,0 +1,10 @@
+# Python Bytecode Files
+__pycache__/
+*.pyc 
+
+# Question Files
+Report_guidelines.pdf
+
+# Report Files
+*.docx
+*.doc
