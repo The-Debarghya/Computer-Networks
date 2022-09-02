@@ -2,7 +2,7 @@
 import socket
 import random
 import time
-from Crypto.Util.number import long_to_bytes
+import packet
 
 HOST = '127.0.0.1'
 PORT = 9999
@@ -24,8 +24,8 @@ def inject_error(text: str, number: int) -> str:
 
 
 c.connect((HOST, PORT))
-with open("test.txt", "r") as f:
-    text = f.read()
+filename = "test.txt"
+f = open(filename, "r")
 
 protocol = input(
     "Select the Protocol:\n[1]Stop and Wait ARQ\n[2]Go Back N\n[3]Selective Repeat\nYour choice:")
@@ -33,3 +33,15 @@ if protocol not in ["1", "2", "3"]:
     print("Not a valid option!")
     exit(2)
 c.send(protocol.encode('utf-8'))
+if protocol == "1":
+    text = f.read(46)
+    while text != '':
+        pkt = packet.Packet(list(c.getsockname()),
+                            list(c.getpeername()), 1, 1, text)
+        c.send(str.encode(pkt.toBinaryString(46)))
+        text = f.read(46)
+    f.close()
+elif protocol == "2":
+    pass
+else:
+    pass

@@ -76,5 +76,11 @@ class Packet:
     def getSeqNo(self):
         return self.seqNo
 
+    def getDestAddr(self):
+        return self.dest
+
+    def getSrcAddr(self):
+        return self.src
+
     def hasError(self):
         return crc.CRC.checkRemainder(self.packet, divisor)
