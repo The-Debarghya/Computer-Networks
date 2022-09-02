@@ -8,3 +8,6 @@ Report_guidelines.pdf
 # Report Files
 *.docx
 *.doc
+
+# Other Files
+*.txt
