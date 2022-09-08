@@ -1,47 +1,75 @@
 #!/usr/bin/env python3
+
 import socket
-import random
-import time
-import packet
-
-HOST = '127.0.0.1'
-PORT = 9999
-DATA_SIZE = 46
-c = socket.socket()
-random.seed(time.time())
+import select
+import SenderSW
+import ReceiverSW
+import SenderGBN
+import ReceiverGBN
+import SenderSR
+import ReceiverSR
 
 
-def inject_error(text: str, number: int) -> str:
-    if number == 0:
-        return text
-    for _ in range(number):
-        x = random.randint(0, len(text)-1)
-        if text[x] == '0':
-            text = text[:x]+'1'+text[x+1:]
-        else:
-            text = text[:x]+'0'+text[x+1:]
-    return text
+senderList = [SenderSW, SenderGBN, SenderSR]
+receiverList = [ReceiverSW, ReceiverGBN, ReceiverSR]
 
 
-c.connect((HOST, PORT))
-filename = "test.txt"
-f = open(filename, "r")
+def my_sender():
+    print('Select Protocol-----')
+    print('1.Stop and wait\n2.Go back N\n3.Selective repeat\n')
+    protocol = int(input('Enter choice: '))
+    if(protocol > 3 or protocol < 1):
+        protocol = 1
+    protocol -= 1
+    HOST = '127.0.0.1'
+    PORT = 9999
+    with socket.socket() as client:
+        client.connect((HOST, PORT))
+        msg = client.recv(1024).decode()
+        print(msg, end='')
+        name = input()
+        client.sendall(bytes(name, 'utf-8'))
+        address = client.recv(1024).decode()
+        senderAddress = int(address)
+        while(True):
+            print('Input options-----\n1.Send data\n2.Close\n')
+            choice = int(input('Enter option: '))
+            if(choice == 1):
+                client.send(str.encode("request for sending"))
+            elif(choice == 2):
+                client.send(str.encode("close"))
+                break
+            inputs = [client]
+            output = []
+            readable, writable, exceptionals = select.select(
+                inputs, output, inputs, 3600)
+            for s in readable:
+                data = s.recv(1024).decode()
+                if(data == "No client is available"):
+                    print(data)
+                    break
+                elif(choice == 1):
+                    file_name = 'data.txt'
+                    receiver_list = data.split(',')
+                    print('Available clients-----')
+                    for index in range(0, len(receiver_list)):
+                        print((index+1), '. ', receiver_list[index])
+                    choice = int(input('\nYour choice : '))
+                    choice -= 1
+                    while(choice not in range(0, (len(receiver_list)))):
+                        choice = int(input('Choose correctly: '))
+                        choice -= 1
+                    s.send(str.encode(str(choice)))
+                    receiverAddress = int(s.recv(1024).decode())
+                    my_sender = senderList[protocol].Sender(
+                        client, name, senderAddress, receiver_list[index], receiverAddress, file_name)
+                    my_sender.transmit()
+                    data = s.recv(1024)
+                    data = data.decode()
+                    print(data)
+            if not (readable or writable or exceptionals):
+                continue
 
-protocol = input(
-    "Select the Protocol:\n[1]Stop and Wait ARQ\n[2]Go Back N\n[3]Selective Repeat\nYour choice:")
-if protocol not in ["1", "2", "3"]:
-    print("Not a valid option!")
-    exit(2)
-c.send(protocol.encode('utf-8'))
-if protocol == "1":
-    text = f.read(46)
-    while text != '':
-        pkt = packet.Packet(list(c.getsockname()),
-                            list(c.getpeername()), 1, 1, text)
-        c.send(str.encode(pkt.toBinaryString(46)))
-        text = f.read(46)
-    f.close()
-elif protocol == "2":
-    pass
-else:
-    pass
+
+if __name__ == '__main__':
+    my_sender()
