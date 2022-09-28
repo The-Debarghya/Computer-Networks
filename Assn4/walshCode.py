@@ -24,7 +24,7 @@ def generateWalshTable(wtable, length, x1, x2, y1, y2, compFlag: bool):
     generateWalshTable(wtable, length/2, x1, midx, y1, midy, compFlag)
     generateWalshTable(wtable, length/2, x1, midx, midy+1, y2, compFlag)
     generateWalshTable(wtable, length/2, midx+1, x2, y1, midy, compFlag)
-    generateWalshTable(wtable, length/2, midx+1, x2, midy+1, y2, compFlag)
+    generateWalshTable(wtable, length/2, midx+1, x2, midy+1, y2, not compFlag)
 
 def getWalshTable(senders):
     n = nextPowerOf2(senders)
