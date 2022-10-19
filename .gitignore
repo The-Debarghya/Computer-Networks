@@ -4,6 +4,7 @@ __pycache__/
 
 # Question Files
 Report_guidelines.pdf
+Assignment#*
 
 # Report Files
 *.docx
@@ -11,3 +12,8 @@ Report_guidelines.pdf
 
 # Other Files
 *.txt
+*.png
+*.jpg
+*.jpeg
+*.pcap
+*.pcapng
