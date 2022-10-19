@@ -11,9 +11,11 @@ Assignment#*
 *.doc
 
 # Other Files
+*.json
 *.txt
 *.png
 *.jpg
 *.jpeg
 *.pcap
 *.pcapng
+.vscode/
