@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import threading
 import time
+import random
 
 class bcolors:
     HEADER = '\033[106m'
@@ -18,9 +19,8 @@ class bcolors:
         return s1
 
 total_frames = 0
-frametime = 0.4
-inbetween_frametime = 0.2
-nframes = 0
+frametime = 0.2
+inbetween_frametime = 0.05
 frame_attempts = 0
 
 def channel(lock: threading.Lock, total_frames_to_send: int) -> None:
@@ -40,7 +40,7 @@ def channel(lock: threading.Lock, total_frames_to_send: int) -> None:
     except ZeroDivisionError:
         print(f"{bcolors.return_color(0, 31, 40, '[-] ERROR: Division by zero is not possible!')}")
 
-class OnePersistentCsma(threading.Thread):
+class NonPersistentCsma(threading.Thread):
     def __init__(self, lock: threading.Lock, index: int) -> None:
         super().__init__()
         self.index = index
@@ -54,6 +54,9 @@ class OnePersistentCsma(threading.Thread):
         while cnt <= nframes:
             print(f"{bcolors.return_color(1, 33, 40, f'[i] ATTEMPT: Frame {cnt}, from Station {self.index}')}")
             while self.lock.locked():
+                backoff_period = round(random.uniform(0.3, 0.5), 2)
+                print(f"{bcolors.return_color(0, 35, 40, f'[-] WAITING: Frame {cnt}, from Station {self.index}, Period: {backoff_period}')}")
+                time.sleep(backoff_period)
                 print(f"{bcolors.return_color(0, 31, 40, f'[-] FAILED: Frame {cnt}, from Station {self.index}')}")
                 frame_attempts += 1
 
@@ -73,7 +76,7 @@ def main():
     nframes = int(input(f"{bcolors.OKBLUE}[*] PROMPT: Number of frames to send per station:{bcolors.ENDC}"))
 
     lock = threading.Lock()
-    station_list = [OnePersistentCsma(lock, i+1) for i in range(nstations)]
+    station_list = [NonPersistentCsma(lock, i+1) for i in range(nstations)]
     channel_thread = threading.Thread(target=channel, args=[lock, nstations*nframes])
     channel_thread.start()
     for station in station_list:
