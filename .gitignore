@@ -16,6 +16,7 @@ Assignment#*
 *.png
 *.jpg
 *.jpeg
+*.pkt
 *.pcap
 *.pcapng
 .vscode/
