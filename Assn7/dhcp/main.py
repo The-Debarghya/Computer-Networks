@@ -30,14 +30,14 @@ def server(interface, port, ndevices):
     while True:
         data, address = sock.recvfrom(BUFSIZE)
         text = data.decode('ascii')
-        print(f"The client at ('0.0.0.0', {address[1]}) is: {text}")
+        print(f"The client at ('255.255.255.255', {address[1]}) is: {text}")
         s = text.split(":")[1]
         if s in taken_ips:
             sock.sendto(b"Declined Request", address)
             print("Declined Request")
         else:
             taken_ips.append(s)
-            sock.sendto(f"{s},{calculateSubnetMaskv4(ndevices)},{interface}".encode("ascii"), address)
+            sock.sendto(f"{s},{calculateSubnetMaskv4(ndevices)},8.8.8.8, 30mins".encode("ascii"), address)
 
 
 def client(network, port):
@@ -45,10 +45,10 @@ def client(network, port):
     addr = ("192.168.101.6", 40400)
     sock.bind(addr)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
-    text = f"Requesting for IP, subnet mask, default gateway, previous IP:{addr[0]}"
+    text = f"Requesting for IP, subnet mask, default gateway, DNS server, Timeout, previous IP:{addr[0]}"
     s = network.split(".")
     netw_list = [".".join(s[:3])+"."+str(int(i)) for i in range(256)]
-    print("Requested for private IP, subnet-mask, gateway")
+    print("Broadcasted for private IP, subnet-mask, gateway(Discover)")
     for netw in netw_list:
         try:
             sock.sendto(text.encode("ascii"), (netw, port))
@@ -67,11 +67,13 @@ def client(network, port):
             prev = new
             sock.sendto(f"Requesting for IP:{new}".encode('ascii'), address)
         else:
-            print("Reply from BOOTP server:")
+            print(f"Offer from DHCP server({address}):")
             addrs = text.split(",")
             print(f"Assigned IP: {addrs[0]}")
             print(f"Subnet Mask of network: {addrs[1]}")
             print(f"Default gateway: {address[0]}")
+            print(f"DNS server: {addrs[2]}")
+            print(f"Time out for the offer: {addrs[3]}")
             sock.close()
             break
 
