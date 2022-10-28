@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import validate
+from Crypto.Util.number import long_to_bytes
 
 class Packet:
     def __init__(self, _type, seq, segment_data, src, dest) -> None:
@@ -49,9 +50,7 @@ class Packet:
     def get_data(self) -> str:
         datastr = ""
         databits = self.packet[176:544]
-        chunks = [databits[i:i+8] for i in range(0, len(databits), 8)]
-        for chunk in chunks:
-            datastr += chr(int(chunk, 2))
+        datastr = long_to_bytes(int(databits, 2)).decode('utf-8')
         return datastr
 
     def validate_packet(self) -> bool:
