@@ -7,33 +7,33 @@ import (
 	"net"
 )
 
-type DomainName struct {
-	Name    string `json:"name"`
+type Entry struct {
+	DomainName    string `json:"name"`
 	Address string `json:"address"`
 }
 
-type Name struct {
-	Name    string
+type Record struct {
+	DomainName    string
 	Address net.IP
 }
 
-func WriteNames(name Name) error {
+func WriteNames(name Record) error {
 	data, err := os.ReadFile("./entries.json")
 	if err != nil {
 		fmt.Print(err)
 		return err
 	}
-	var models []DomainName
-	err = json.Unmarshal(data, &models)
+	var entries []Entry
+	err = json.Unmarshal(data, &entries)
 	if err != nil {
 		fmt.Print(err)
 		return err
 	}
-	models = append(models, DomainName{
-		Name: name.Name,
+	entries = append(entries, Entry{
+		DomainName: name.DomainName,
 		Address: name.Address.String(),
 	})
-	final, err := json.Marshal(models)
+	final, err := json.Marshal(entries)
 	if err != nil {
 		fmt.Print(err)
 		return err
@@ -42,27 +42,27 @@ func WriteNames(name Name) error {
 	return err
 }
 
-func GetNames() ([]Name, error) {
+func GetNames() ([]Record, error) {
 	data, err := os.ReadFile("./entries.json")
 	if err != nil {
 		fmt.Print(err)
 		return nil, err
 	}
-	var models []DomainName
-	err = json.Unmarshal(data, &models)
+	var entries []Entry
+	err = json.Unmarshal(data, &entries)
 	if err != nil {
 		fmt.Println("error:", err)
 		return nil, err
 	}
-	return To(models), nil
+	return To(entries), nil
 }
 
-func To(models []DomainName) []Name {
-	names := make([]Name, 0, len(models))
-	for _, value := range models {
-		names = append(names, Name{
-			Name:    value.Name,
-			Address: net.ParseIP(value.Address),
+func To(entries []Entry) []Record {
+	names := make([]Record, 0, len(entries))
+	for _, entry := range entries {
+		names = append(names, Record{
+			DomainName:    entry.DomainName,
+			Address: net.ParseIP(entry.Address),
 		})
 	}
 	return names

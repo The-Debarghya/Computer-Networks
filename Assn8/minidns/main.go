@@ -55,10 +55,10 @@ func dbLookup(queryResourceRecord DNSResourceRecord) ([]DNSResourceRecord, []DNS
 		return answerResourceRecords, authorityResourceRecords, additionalResourceRecords
 	}
 	for _, name := range names {
-		if strings.Contains(queryResourceRecord.DomainName, name.Name) {
+		if strings.Contains(queryResourceRecord.DomainName, name.DomainName) {
 			fmt.Println(queryResourceRecord.DomainName, "resolved to", name.Address)
 			answerResourceRecords = append(answerResourceRecords, DNSResourceRecord{
-				DomainName:         name.Name,
+				DomainName:         name.DomainName,
 				Type:               TypeA,
 				Class:              ClassINET,
 				TimeToLive:         31337,
@@ -84,8 +84,8 @@ func dbLookup(queryResourceRecord DNSResourceRecord) ([]DNSResourceRecord, []DNS
 					ResourceData:       ip[12:16],
 					ResourceDataLength: 4,
 				})
-				WriteNames(Name{
-					Name:    queryResourceRecord.DomainName,
+				WriteNames(Record{
+					DomainName:    queryResourceRecord.DomainName,
 					Address: ip,
 				})
 			}
