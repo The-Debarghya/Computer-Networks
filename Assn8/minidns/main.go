@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"fmt"
+	"log"
 	"io"
 	"net"
 	"os"
@@ -56,7 +56,7 @@ func dbLookup(queryResourceRecord DNSResourceRecord) ([]DNSResourceRecord, []DNS
 	}
 	for _, name := range names {
 		if strings.Contains(queryResourceRecord.DomainName, name.DomainName) {
-			fmt.Println(queryResourceRecord.DomainName, "resolved to", name.Address)
+			log.Println(queryResourceRecord.DomainName, "resolved to", name.Address)
 			answerResourceRecords = append(answerResourceRecords, DNSResourceRecord{
 				DomainName:         name.DomainName,
 				Type:               TypeA,
@@ -70,11 +70,11 @@ func dbLookup(queryResourceRecord DNSResourceRecord) ([]DNSResourceRecord, []DNS
 	if len(answerResourceRecords) == 0 {
 		ips, err := net.LookupIP(queryResourceRecord.DomainName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not get IPs: %v\n", err)
+			log.Panic("Could not get IPs:", err)
 			//os.Exit(1)
 		}
 		for _, ip := range ips {
-			fmt.Println(queryResourceRecord.DomainName, "resolved to", ip)
+			log.Println(queryResourceRecord.DomainName, "resolved to", ip)
 			if ip.To4() != nil {
 				answerResourceRecords = append(answerResourceRecords, DNSResourceRecord{
 					DomainName:         queryResourceRecord.DomainName,
@@ -141,7 +141,7 @@ func handleDNSClient(requestBytes []byte, serverConn *net.UDPConn, clientAddr *n
 	err := binary.Read(requestBuffer, binary.BigEndian, &queryHeader)
 
 	if err != nil {
-		fmt.Println("Error decoding header: ", err.Error())
+		log.Println("Error decoding header: ", err.Error())
 	}
 
 	queryResourceRecords = make([]DNSResourceRecord, queryHeader.NumQuestions)
@@ -150,7 +150,7 @@ func handleDNSClient(requestBytes []byte, serverConn *net.UDPConn, clientAddr *n
 		queryResourceRecords[idx].DomainName, err = readDomainName(requestBuffer)
 
 		if err != nil {
-			fmt.Println("Error decoding label: ", err.Error())
+			log.Println("Error decoding label: ", err.Error())
 		}
 
 		queryResourceRecords[idx].Type = binary.BigEndian.Uint16(requestBuffer.Next(2))
@@ -184,13 +184,13 @@ func handleDNSClient(requestBytes []byte, serverConn *net.UDPConn, clientAddr *n
 	}
 	err = Write(responseBuffer, &responseHeader)
 	if err != nil {
-		fmt.Println("Error writing to buffer: ", err.Error())
+		log.Println("Error writing to buffer: ", err.Error())
 	}
 
 	for _, queryResourceRecord := range queryResourceRecords {
 		err = writeDomainName(responseBuffer, queryResourceRecord.DomainName)
 		if err != nil {
-			fmt.Println("Error writing to buffer: ", err.Error())
+			log.Println("Error writing to buffer: ", err.Error())
 		}
 		Write(responseBuffer, queryResourceRecord.Type)
 		Write(responseBuffer, queryResourceRecord.Class)
@@ -199,7 +199,7 @@ func handleDNSClient(requestBytes []byte, serverConn *net.UDPConn, clientAddr *n
 	for _, answerResourceRecord := range answerResourceRecords {
 		err = writeDomainName(responseBuffer, answerResourceRecord.DomainName)
 		if err != nil {
-			fmt.Println("Error writing to buffer: ", err.Error())
+			log.Println("Error writing to buffer: ", err.Error())
 		}
 		Write(responseBuffer, answerResourceRecord.Type)
 		Write(responseBuffer, answerResourceRecord.Class)
@@ -211,7 +211,7 @@ func handleDNSClient(requestBytes []byte, serverConn *net.UDPConn, clientAddr *n
 	for _, authorityResourceRecord := range authorityResourceRecords {
 		err = writeDomainName(responseBuffer, authorityResourceRecord.DomainName)
 		if err != nil {
-			fmt.Println("Error writing to buffer: ", err.Error())
+			log.Println("Error writing to buffer: ", err.Error())
 		}
 		Write(responseBuffer, authorityResourceRecord.Type)
 		Write(responseBuffer, authorityResourceRecord.Class)
@@ -223,7 +223,7 @@ func handleDNSClient(requestBytes []byte, serverConn *net.UDPConn, clientAddr *n
 	for _, additionalResourceRecord := range additionalResourceRecords {
 		err = writeDomainName(responseBuffer, additionalResourceRecord.DomainName)
 		if err != nil {
-			fmt.Println("Error writing to buffer: ", err.Error())
+			log.Println("Error writing to buffer: ", err.Error())
 		}
 		Write(responseBuffer, additionalResourceRecord.Type)
 		Write(responseBuffer, additionalResourceRecord.Class)
@@ -238,24 +238,24 @@ func main() {
 	serverAddr, err := net.ResolveUDPAddr("udp", "localhost:1053")
 
 	if err != nil {
-		fmt.Println("Error resolving UDP address: ", err.Error())
+		log.Println("Error resolving UDP address: ", err.Error())
 		os.Exit(1)
 	}
 	serverConn, err := net.ListenUDP("udp", serverAddr)
 	if err != nil {
-		fmt.Println("Error listening: ", err.Error())
+		log.Println("Error listening: ", err.Error())
 		os.Exit(1)
 	}
-	fmt.Println("Listening at: ", serverAddr)
+	log.Println("Listening at: ", serverAddr)
 	defer serverConn.Close()
 
 	for {
 		requestBytes := make([]byte, UDPMaxMessageSizeBytes)
 		_, clientAddr, err := serverConn.ReadFromUDP(requestBytes)
 		if err != nil {
-			fmt.Println("Error receiving: ", err.Error())
+			log.Println("Error receiving: ", err.Error())
 		} else {
-			fmt.Println("Received request from ", clientAddr)
+			log.Println("Received request from ", clientAddr)
 			go handleDNSClient(requestBytes, serverConn, clientAddr) // array is value type (call-by-value), i.e. copied
 		}
 	}
