@@ -21,7 +21,7 @@ def calculateSubnetMaskv4(n: int) -> str:
     return ".".join(subnet)
 
 
-def server(interface, port, ndevices):
+def server(interface, port, ndevices, dns, timeout):
     taken_ips = []
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((interface, port))
@@ -37,7 +37,7 @@ def server(interface, port, ndevices):
             print("Declined Request")
         else:
             taken_ips.append(s)
-            sock.sendto(f"{s},{calculateSubnetMaskv4(ndevices)},8.8.8.8, 30mins".encode("ascii"), address)
+            sock.sendto(f"{s},{calculateSubnetMaskv4(ndevices)},{dns},{timeout} mins".encode("ascii"), address)
 
 
 def client(network, port):
@@ -85,9 +85,11 @@ if __name__ == "__main__":
     parser.add_argument('host', help='interface the server listens at;' ' network the client sends to')
     parser.add_argument('-p', metavar='port', type=int, default=1060, help='UDP port (default 1060)')
     parser.add_argument('-n', metavar='ndevices', type=int, default=256, help="Number of devices in current network(Max supported=254)")
+    parser.add_argument('-dns', metavar='dns', type=str, default='8.8.8.8', help="manually set the dns server")
+    parser.add_argument('-t', metavar='time', type=int, default=30, help="Set TimeOut for an IP")
     args = parser.parse_args()
     function = choices[args.role]
     if function == client:
         function(args.host, args.p)
     else:
-        function(args.host, args.p, args.n)
+        function(args.host, args.p, args.n, args.dns, args.t)
