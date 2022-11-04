@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
-import argparse, socket
+import argparse
+import socket
 import random
 from time import time
 BUFSIZE = 65535
+
 
 def nextPowerOf2(num: int):
     n = 1
@@ -21,7 +23,7 @@ def calculateSubnetMaskv4(n: int) -> str:
     return ".".join(subnet)
 
 
-def server(interface, port, ndevices, dns, timeout):
+def server(interface, port, ndevices, dns, timeout, gateway):
     taken_ips = []
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((interface, port))
@@ -30,14 +32,23 @@ def server(interface, port, ndevices, dns, timeout):
     while True:
         data, address = sock.recvfrom(BUFSIZE)
         text = data.decode('ascii')
-        print(f"The client at ('255.255.255.255', {address[1]}) is: {text}")
-        s = text.split(":")[1]
-        if s in taken_ips:
-            sock.sendto(b"Declined Request", address)
-            print("Declined Request")
+        print(f"The client at ('0.0.0.0', {address[1]}) sent: {text}")
+        if address[0] not in taken_ips:
+            addr = address[0]
+            taken_ips.append(address[0])
         else:
-            taken_ips.append(s)
-            sock.sendto(f"{s},{calculateSubnetMaskv4(ndevices)},{dns},{timeout} mins".encode("ascii"), address)
+            random.seed(time())
+            addr_blocks = address[0].split(".")
+            addr = ".".join(addr_blocks[:3]) + "." + str(random.randint(1, 254))
+            taken_ips.append(addr)
+        print(f"Sent the following Offer:\nIP-{addr},\nGateway-{gateway},\
+        \nSubnet Mask-{calculateSubnetMaskv4(ndevices)},\nDNS Server-{dns},\nTime To Live-{timeout} mins")
+        config = f"{addr},{gateway},{calculateSubnetMaskv4(ndevices)},{dns},{timeout}".encode('ascii')
+        sock.sendto(config, address)
+        config, address = sock.recvfrom(BUFSIZE)
+        print(f"Received request from:0.0.0.0, {address[1]}")
+        sock.sendto("OK".encode('ascii'), address)
+
 
 
 def client(network, port):
@@ -45,7 +56,7 @@ def client(network, port):
     addr = ("192.168.101.6", 40400)
     sock.bind(addr)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
-    text = f"Requesting for IP, subnet mask, default gateway, DNS server, Timeout, previous IP:{addr[0]}"
+    text = f"Discover request for IP, subnet mask, default gateway, DNS server, Timeout, previous IP:{addr[0]}"
     s = network.split(".")
     netw_list = [".".join(s[:3])+"."+str(int(i)) for i in range(256)]
     print("Broadcasted for private IP, subnet-mask, gateway(Discover)")
@@ -54,42 +65,44 @@ def client(network, port):
             sock.sendto(text.encode("ascii"), (netw, port))
         except Exception:
             pass
-    prev = addr[0]
     while True:
-        random.seed(time())
-        data, address = sock.recvfrom(BUFSIZE)
-        text = data.decode('ascii')
-        if "Declined" in text:
-            print(text)
-            print("Requesting again...")
-            l = prev.split(".")
-            new = ".".join(l[:3]) + "." + str(random.randint(1, 254))
-            prev = new
-            sock.sendto(f"Requesting for IP:{new}".encode('ascii'), address)
-        else:
-            print(f"Offer from DHCP server({address}):")
-            addrs = text.split(",")
-            print(f"Assigned IP: {addrs[0]}")
-            print(f"Subnet Mask of network: {addrs[1]}")
-            print(f"Default gateway: {address[0]}")
-            print(f"DNS server: {addrs[2]}")
-            print(f"Time out for the offer: {addrs[3]}")
-            sock.close()
-            break
+       config, address = sock.recvfrom(BUFSIZE)
+       config_list = config.decode('ascii').split(",")
+       print(f"Offer from server:IP-{config_list[0]},Default Gateway-{config_list[1]},Subnet Mask-{config_list[2]},DNS Server-{config_list[3]}, Time To Live:{config_list[4]} mins")
+       print("Request for the offer...")
+       for netw in netw_list:
+        try:
+            sock.sendto(config, (netw, port))
+        except Exception:
+            pass
+       
+       resp, address = sock.recvfrom(BUFSIZE)
+       if resp.decode('ascii') == 'OK':
+        print(f"Reply from server:\nIP-{config_list[0]},\nDefault Gateway-{config_list[1]},\nSubnet Mask-{config_list[2]},\nDNS Server-{config_list[3]},\nTime To Live:{config_list[4]} mins")
+       break
+       
+       #sock.close()
 
 
 if __name__ == "__main__":
     choices = {'client': client, 'server': server}
     parser = argparse.ArgumentParser(description='Send, receive UDP broadcast')
     parser.add_argument('role', choices=choices, help='which role to take')
-    parser.add_argument('host', help='interface the server listens at;' ' network the client sends to')
-    parser.add_argument('-p', metavar='port', type=int, default=1060, help='UDP port (default 1060)')
-    parser.add_argument('-n', metavar='ndevices', type=int, default=256, help="Number of devices in current network(Max supported=254)")
-    parser.add_argument('-dns', metavar='dns', type=str, default='8.8.8.8', help="manually set the dns server")
-    parser.add_argument('-t', metavar='time', type=int, default=30, help="Set TimeOut for an IP")
+    parser.add_argument(
+        'host', help='interface the server listens at;' ' network the client sends to')
+    parser.add_argument('-p', metavar='port', type=int,
+                        default=1060, help='UDP port (default 1060)')
+    parser.add_argument('-n', metavar='ndevices', type=int, default=256,
+                        help="Number of devices in current network(Max supported=254)")
+    parser.add_argument('-dns', metavar='dns', type=str,
+                        default='8.8.8.8', help="manually set the dns server")
+    parser.add_argument('-t', metavar='time', type=int,
+                        default=30, help="Set TimeOut for an IP")
+    parser.add_argument('-gateway', metavar='gateway', type=str,
+                        default='192.168.101.6', help='Manually set the default gateway')
     args = parser.parse_args()
     function = choices[args.role]
     if function == client:
         function(args.host, args.p)
     else:
-        function(args.host, args.p, args.n, args.dns, args.t)
+        function(args.host, args.p, args.n, args.dns, args.t, args.gateway)
