@@ -53,7 +53,7 @@ def server(interface, port, ndevices, dns, timeout, gateway):
 
 def client(network, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    addr = ("192.168.101.6", 40400)
+    addr = ("172.28.1.211", 40400)
     sock.bind(addr)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 0)
     text = f"Discover request for IP, subnet mask, default gateway, DNS server, Timeout, previous IP:{addr[0]}"
@@ -68,7 +68,7 @@ def client(network, port):
     while True:
        config, address = sock.recvfrom(BUFSIZE)
        config_list = config.decode('ascii').split(",")
-       print(f"Offer from server:IP-{config_list[0]},Default Gateway-{config_list[1]},Subnet Mask-{config_list[2]},DNS Server-{config_list[3]}, Time To Live:{config_list[4]} mins")
+       print(f"Offer from server:IP-{config_list[0]},Default Gateway-{config_list[1]},Subnet Mask-{config_list[2]},DNS Server-{config_list[3]},Time To Live:{config_list[4]} mins")
        print("Request for the offer...")
        for netw in netw_list:
         try:
