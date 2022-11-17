@@ -37,5 +37,6 @@
   - **How to simulate?**
   - `FTP`: More info <a href="https://github.com/The-Debarghya/goftpd">here</a>.
   - `DNS`: Build with `go build .`, Run `minidns` binary, Test with `dig example.com @localhost -p1053`
+  - `Telnet`: Start `server.py` then run `client.py`.
 
 
