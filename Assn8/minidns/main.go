@@ -124,9 +124,7 @@ func writeDomainName(responseBuffer *bytes.Buffer, domainName string) error {
 		responseBuffer.WriteByte(byte(labelLength))
 		responseBuffer.Write(labelBytes)
 	}
-
 	err := responseBuffer.WriteByte(byte(0))
-
 	return err
 }
 
@@ -256,7 +254,7 @@ func main() {
 			log.Println("Error receiving: ", err.Error())
 		} else {
 			log.Println("Received request from ", clientAddr)
-			go handleDNSClient(requestBytes, serverConn, clientAddr) // array is value type (call-by-value), i.e. copied
+			go handleDNSClient(requestBytes, serverConn, clientAddr) 
 		}
 	}
 }
