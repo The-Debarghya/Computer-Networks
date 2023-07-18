@@ -33,7 +33,7 @@
 - `Assignment 7`: Implementation of BOOTP and DHCP.
   - **How to simulate?**
   - Both DHCP and BOOTP: Run `main.py` with help argument to get idea.
-- `Assignment 8`: Implementation of FTP and DNS.
+- `Assignment 8`: Implementation of FTP, DNS and Telnet.
   - **How to simulate?**
   - `FTP`: More info <a href="https://github.com/The-Debarghya/goftpd">here</a>.
   - `DNS`: Build with `go build .`, Run `minidns` binary, Test with `dig example.com @localhost -p1053`
