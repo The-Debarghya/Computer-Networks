@@ -18,6 +18,7 @@
   - Run `create_inputs.py` to create some input files.
   - Create `collide.txt` with text 0 in logs directory, and `log.txt`, `analysis.txt` there itself.
   - Run `main.py`.
+  > - You can run the individual `one-persistent`, `p-persistent` and `non-persistent` files to simulate another type of implementation(a rather vague one).
 - `Assignment 4`: CDMA technique with Walsh Code generation simulation.
   - **How to simulate?**
   - Create a directory named `logs` and `input`, `output` directories inside it.
